@@ -1,4 +1,5 @@
-# (remova "version:" para evitar warning do Compose v2)
+# docker-compose.yml — DropEntregas
+# (sem "version" para evitar warning do Compose v2)
 
 networks:
   traefik:
@@ -7,15 +8,20 @@ networks:
     external: true
 
 services:
+  ###################################
+  # FRONT-END (Vite + Nginx)
+  ###################################
   drop-front:
     build:
       context: ./frontend
       dockerfile: Dockerfile
       args:
         VITE_API_BASE_URL: ${DROP_API_PUBLIC_URL}
-    image: ${REGISTRY:-}/drop-front:${TAG:-latest}
+    image: ${REGISTRY:+${REGISTRY}/}drop-front:${TAG:-latest}
     restart: unless-stopped
-    networks: [traefik, backend]
+    networks:
+      - traefik
+      - backend
     labels:
       - traefik.enable=true
       - traefik.docker.network=traefik
@@ -23,26 +29,34 @@ services:
       - traefik.http.routers.drop-front.entrypoints=https
       - traefik.http.routers.drop-front.tls.certresolver=${CERT_RESOLVER}
       - traefik.http.services.drop-front.loadbalancer.server.port=80
-    # Se precisar de variáveis em runtime para Nginx, use um entrypoint com envsubst.
-    # Para SPA padrão, não precisa.
+    depends_on:
+      - drop-api
 
+  ###################################
+  # BACK-END (Express / Node)
+  ###################################
   drop-api:
     build:
       context: ./backend
       dockerfile: Dockerfile
-    image: ${REGISTRY:-}/drop-api:${TAG:-latest}
+    image: ${REGISTRY:+${REGISTRY}/}drop-api:${TAG:-latest}
     restart: unless-stopped
     environment:
       # Porta interna do app
       PORT: ${DROP_API_PORT}
-      # Conexões com seus bancos (os hosts são os serviços do core na rede "backend")
-      DATABASE_URL: ${DATABASE_URL}            # (ex.: postgres://appuser:senha@postgres:5432/appdb)
-      MONGO_URL: ${MONGO_URL}                  # (ex.: mongodb://root:senha@mongo:27017/admin)
-      MSSQL_URL: ${MSSQL_URL}                  # (ex.: Server=mssql,1433;User Id=sa;Password=...;TrustServerCertificate=True;)
-      # Outras envs do seu app...
+
+      # Conexão com banco (Postgres da infra)
+      DATABASE_URL: ${DATABASE_URL}
+
+      # Configurações CORS e ambiente
+      CORS_ORIGINS: ${DROP_FRONT_ORIGIN}
+      NODE_ENV: production
+      SEED_ON_START: true
     depends_on:
       - wait-db
-    networks: [traefik, backend]
+    networks:
+      - traefik
+      - backend
     labels:
       - traefik.enable=true
       - traefik.docker.network=traefik
@@ -51,18 +65,20 @@ services:
       - traefik.http.routers.drop-api.tls.certresolver=${CERT_RESOLVER}
       - traefik.http.services.drop-api.loadbalancer.server.port=${DROP_API_PORT}
 
-  # Helper: aguarda bancos ficarem prontos (simples e útil)
+  ###################################
+  # Espera pelos bancos do core
+  ###################################
   wait-db:
     image: alpine:3.20
     command: >
       sh -c "
-      echo 'Aguardando Postgres...';
+      echo '⏳ Aguardando Postgres...';
       for i in `seq 1 60`; do nc -z postgres 5432 && break || sleep 2; done;
-      echo 'Aguardando Mongo...';
+      echo '⏳ Aguardando Mongo...';
       for i in `seq 1 60`; do nc -z mongo 27017 && break || sleep 2; done;
-      echo 'Aguardando MSSQL...';
+      echo '⏳ Aguardando MSSQL...';
       for i in `seq 1 60`; do nc -z mssql 1433 && break || sleep 2; done;
-      echo 'OK'
+      echo '✅ Bancos disponíveis, prosseguindo!';
       "
-    networks: [backend]
-    depends_on: []
+    networks:
+      - backend

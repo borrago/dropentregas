@@ -11,9 +11,6 @@ npm-debug.log*
 
 # config locais
 .env
-.env.*
-Dockerfile
-docker-compose*
 .vscode
 .idea
 
