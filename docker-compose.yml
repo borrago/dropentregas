@@ -37,9 +37,6 @@ services:
       PORT: ${DROP_API_PORT}
       # Conexões com seus bancos (os hosts são os serviços do core na rede "backend")
       DATABASE_URL: ${DATABASE_URL}            # (ex.: postgres://appuser:senha@postgres:5432/appdb)
-      MONGO_URL: ${MONGO_URL}                  # (ex.: mongodb://root:senha@mongo:27017/admin)
-      MSSQL_URL: ${MSSQL_URL}                  # (ex.: Server=mssql,1433;User Id=sa;Password=...;TrustServerCertificate=True;)
-      # Outras envs do seu app...
     depends_on:
       - wait-db
     networks: [traefik, backend]
