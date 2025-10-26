@@ -1,0 +1,26 @@
+# dependências
+node_modules
+dist
+.cache
+.pnpm-store
+.yarn
+.yarn-cache
+npm-debug.log*
+
+# controle de versão
+.git
+.gitignore
+
+# config locais
+.env
+.env.*
+Dockerfile
+docker-compose*
+.vscode
+.idea
+
+# build tools
+*.swp
+*.swo
+*.bak
+*.tmp

@@ -1,0 +1,21 @@
+version: '3.9'
+services:
+  postgres:
+    image: postgres:16
+    container_name: dropentregas-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: dropuser
+      POSTGRES_PASSWORD: droppass
+      POSTGRES_DB: dropdb
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U dropuser -d dropdb"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+volumes:
+  pgdata:

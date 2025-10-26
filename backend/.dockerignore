@@ -1,0 +1,24 @@
+# dependências
+node_modules
+dist
+coverage
+build
+npm-debug.log*
+
+# controle de versão
+.git
+.gitignore
+
+# config locais
+.env
+.env.*
+Dockerfile
+docker-compose*
+.vscode
+.idea
+
+# editor temporários
+*.swp
+*.swo
+*.bak
+*.tmp
